@@ -19,23 +19,52 @@ export const WorkoutCard = ({
   }, {} as { [key: string]: number });
 
   const months = workouts.reduce((acc, workout) => {
-    const year = new Date(workout.datetime_completed);
-    const mmYyyy = `${year.getMonth() + 1}/${year.getFullYear()}`;
-
+    const date = new Date(workout.datetime_completed);
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
     const total = getBlockTotalById(workout.blocks, exercise.id);
-    const currentTotal = acc[mmYyyy] || 0;
+    const monthData = { month, year, total, isHeaviestMonth: false };
 
-    return { ...acc, [mmYyyy]: total + currentTotal };
-  }, {} as { [key: string]: number });
+    const matchingMonth = acc.find(
+      (list) => list.month === month && list.year === year
+    );
 
-  const sortedMonths = Object.entries(months).sort((a, b) => {
-    const [aMonth, aYear] = a[0].split("/");
-    const [bMonth, bYear] = b[0].split("/");
-    if (aYear === bYear) {
-      return parseInt(aMonth) > parseInt(bMonth) ? -1 : 1;
+    if (matchingMonth) {
+      return acc.map((list) => {
+        if (list.month === matchingMonth.month) {
+          return { ...list, total: list.total + total };
+        }
+
+        return list;
+      });
     }
 
-    return parseInt(aYear) > parseInt(bYear) ? -1 : 1;
+    return [...acc, monthData];
+  }, [] as { month: number; year: number; total: number; isHeaviestMonth: boolean }[]);
+
+  const sortedMonths = months.sort((a, b) => {
+    if (a.year === b.year) {
+      return a.month > b.month ? -1 : 1;
+    }
+
+    return a.year > b.year ? -1 : 1;
+  });
+
+  const yearsList = [...new Set([...sortedMonths.map((month) => month.year)])];
+
+  yearsList.forEach((year) => {
+    const heaviestMonth = sortedMonths
+      .filter((month) => month.year === year)
+      .sort((a, b) => (a.total > b.total ? -1 : 1))[0];
+
+    sortedMonths.forEach((month) => {
+      if (
+        month.month === heaviestMonth.month &&
+        month.year === heaviestMonth.year
+      ) {
+        month.isHeaviestMonth = true;
+      }
+    });
   });
 
   return (
@@ -58,11 +87,20 @@ export const WorkoutCard = ({
               );
             })}
             <hr />
-            {Object.entries(sortedMonths).map(([index, detail]) => {
+            {sortedMonths.map((data) => {
               return (
-                <div key={index}>
-                  <span className="text-sm text-gray-500">{detail[0]}</span>:{" "}
-                  {detail[1]}
+                <div
+                  key={`${data.month}-${data.year}`}
+                  className={
+                    data.isHeaviestMonth
+                      ? "bg-green-200 flex justify-between"
+                      : "flex justify-between"
+                  }
+                >
+                  <span className="text-sm text-gray-500">
+                    {data.month}/{data.year}:
+                  </span>
+                  <span>{data.total}</span>
                 </div>
               );
             })}
