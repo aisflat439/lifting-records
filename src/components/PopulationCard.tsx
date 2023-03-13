@@ -1,13 +1,12 @@
 import { Exercise, Workout } from "../types";
 import { getBlockTotalById } from "../utils";
 
-export const PopulationCard = ({
-  exercises,
-  workouts,
-}: {
+export interface IPopulationCard {
   exercises: Exercise[];
   workouts: Workout[];
-}) => {
+}
+
+export const PopulationCard = ({ exercises, workouts }: IPopulationCard) => {
   const populationTotals = exercises.map((exercise) => {
     const workoutGroup = workouts.reduce((acc, workout) => {
       const tally = getBlockTotalById(workout.blocks, exercise.id);
@@ -29,7 +28,7 @@ export const PopulationCard = ({
           return (
             <div key={key}>
               <p>
-                {key}: {value}
+                <span>{key}</span>: <span>{value}</span>
               </p>
             </div>
           );
